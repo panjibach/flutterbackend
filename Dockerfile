@@ -5,27 +5,22 @@ WORKDIR /app
 COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
 
-# ======================================================
-# TAMBAHKAN BARIS INI untuk memberikan izin eksekusi
+# PASTIKAN BARIS INI ADA DI GITHUB ANDA
 RUN chmod +x ./mvnw
-# ======================================================
 
 RUN ./mvnw dependency:go-offline
 COPY src ./src
 
-# Jalankan build dengan perintah yang sudah kita tahu berhasil
+# Jalankan build
 RUN ./mvnw clean package -DskipTests
 
-# Stage 2: Create the final, small image to run the application
+# Stage 2: Create the final, small image
 FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
-# Ambil file JAR yang sudah di-build dari stage sebelumnya
+# Ambil file JAR dari stage sebelumnya
 COPY --from=builder /app/target/flutterbackend-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose port yang digunakan oleh Spring Boot
 EXPOSE 8080
-
-# Perintah untuk menjalankan aplikasi
 ENTRYPOINT ["java", "-jar", "app.jar"]
