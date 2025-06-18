@@ -20,8 +20,12 @@ public class FileStorageService {
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
-    // Inisialisasi direktori upload
+    // === PERUBAHAN DI SINI: Inject base URL dari application.properties ===
+    @Value("${app.base-url}")
+    private String baseUrl;
+
     private Path getUploadPath() {
+        // ... (method ini tidak berubah)
         Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
             if (!Files.exists(uploadPath)) {
@@ -34,48 +38,38 @@ public class FileStorageService {
         }
     }
 
-    // Simpan file dan return path-nya
     public String storeFile(MultipartFile file) {
+        // ... (method ini tidak berubah)
         try {
-            // Validasi file
             if (file == null || file.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File tidak boleh kosong");
             }
-
-            // Validasi tipe file (hanya gambar)
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
                     "Hanya file gambar yang diperbolehkan (JPEG, PNG, GIF, dll)");
             }
-
-            // Buat nama file unik untuk menghindari konflik
             String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
             String fileExtension = "";
             if (originalFilename.contains(".")) {
                 fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
             }
             String filename = UUID.randomUUID().toString() + fileExtension;
-
-            // Simpan file
             Path targetLocation = getUploadPath().resolve(filename);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
             System.out.println("File berhasil disimpan: " + filename);
             return filename;
-            
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
                 "Gagal menyimpan file: " + e.getMessage(), e);
         }
     }
 
-    // Hapus file lama jika ada
     public void deleteFile(String filename) {
+        // ... (method ini tidak berubah)
         if (filename == null || filename.isEmpty() || filename.equals("default.jpg")) {
-            return; // Jangan hapus file default
+            return;
         }
-
         try {
             Path filePath = getUploadPath().resolve(filename);
             if (Files.exists(filePath)) {
@@ -87,11 +81,14 @@ public class FileStorageService {
         }
     }
 
-    // Dapatkan URL untuk mengakses file
+    // === PERUBAHAN DI SINI: Membuat URL Absolut/Lengkap ===
     public String getFileUrl(String filename) {
-        if (filename == null || filename.isEmpty()) {
-            return "/uploads/default.jpg";
+        if (filename == null || filename.isEmpty() || filename.equals("default.jpg")) {
+            // Anda bisa memilih untuk men-host gambar default Anda sendiri
+            // atau menggunakan placeholder dari internet.
+            // Untuk saat ini, kita arahkan ke file default yang juga disajikan oleh backend.
+            return baseUrl + "/uploads/default.jpg";
         }
-        return "/uploads/" + filename;
+        return baseUrl + "/uploads/" + filename;
     }
 }

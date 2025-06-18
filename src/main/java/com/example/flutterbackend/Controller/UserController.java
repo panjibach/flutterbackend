@@ -288,6 +288,40 @@ public class UserController {
         }
     }
 
+    // Method DELETE untuk menghapus foto profil
+    @DeleteMapping("/{userId}/profile-photo")
+    public ResponseEntity<?> deleteProfilePhoto(
+            @PathVariable Long userId,
+            HttpServletRequest request) {
+        
+        try {
+            System.out.println("=== DELETE /api/users/" + userId + "/profile-photo called ===");
+            
+            // 1. Validasi akses, pastikan user yang login yang menghapus fotonya sendiri
+            if (!authHelper.validateUserAccess(userId, request)) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Anda tidak memiliki akses untuk mengubah profile ini");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
+            
+            // 2. Panggil service untuk menghapus foto
+            UserDTO updatedUser = userService.deleteProfilePhoto(userId);
+            
+            // 3. Kirim response sukses
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Foto profil berhasil dihapus");
+            response.put("user", updatedUser);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("Error deleting profile photo: " + e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
     // ========== ERROR HANDLING ==========
     
     @ExceptionHandler(Exception.class)
