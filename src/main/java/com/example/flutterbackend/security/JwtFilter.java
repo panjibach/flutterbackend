@@ -76,7 +76,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 System.out.println("Validating token for user: " + userEmail);
                 
                 // Validate token
-                if (jwtUtil.validateToken(jwt, userEmail)) {
+                if (jwtUtil.validateToken(jwt)) {
                     System.out.println("Token is valid");
                     
                     // Get user from database
