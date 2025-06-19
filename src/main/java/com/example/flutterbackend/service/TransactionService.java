@@ -300,4 +300,94 @@ public class TransactionService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to calculate yearly summary: " + e.getMessage());
         }
     }
+
+    public byte[] generateCsvReport(Long userId, LocalDate startDate, LocalDate endDate) {
+        try {
+            List<Transaction> transactions = transactionRepository.findByUserIdAndDateRange(userId, startDate, endDate);
+
+            StringBuilder csvContent = new StringBuilder();
+            // CSV Header - Template Laporan (terstruktur)
+            csvContent.append("Date,Type,Category,Description,Amount\n");
+
+            // CSV Data - Dinamis berdasarkan data transaksi
+            for (Transaction tx : transactions) {
+                csvContent.append(tx.getTransactionDate().toString()).append(",");
+                csvContent.append(tx.getTransactionType()).append(",");
+                String categoryName = "N/A";
+                if (tx.getCategory() != null) {
+                    categoryName = tx.getCategory().getCategoryName();
+                }
+                csvContent.append(categoryName.replace(",", ";")).append(","); // Handle commas in category name
+                csvContent.append(tx.getTransactionDescription() != null ? tx.getTransactionDescription().replace(",", ";") : "").append(","); // Handle commas in description
+                csvContent.append(tx.getTransactionAmount().toPlainString()).append("\n");
+            }
+            return csvContent.toString().getBytes("UTF-8");
+        } catch (Exception e) {
+            System.err.println("Error generating CSV report: " + e.getMessage());
+            e.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate CSV report: " + e.getMessage());
+        }
+    }
+
+    // Conceptual PDF generation (requires a library like iText or Apache PDFBox)
+    // Untuk PDF, Anda memerlukan library seperti iText (com.itextpdf:itextpdf) atau Apache PDFBox (org.apache.pdfbox:pdfbox)
+    // yang harus ditambahkan ke pom.xml atau build.gradle Anda.
+    // Implementasi di bawah ini adalah placeholder.
+    public byte[] generatePdfReport(Long userId, LocalDate startDate, LocalDate endDate) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "PDF generation is not implemented. Requires a PDF library (e.g., iText, Apache PDFBox).");
+        /*
+        // Contoh konseptual menggunakan iText:
+        // Pastikan Anda telah menambahkan dependensi iText ke pom.xml atau build.gradle Anda:
+        // Maven:
+        // <dependency>
+        //     <groupId>com.itextpdf</groupId>
+        //     <artifactId>itextpdf</artifactId>
+        //     <version>5.5.13.3</version>
+        // </dependency>
+        // Gradle:
+        // implementation 'com.itextpdf:itextpdf:5.5.13.3'
+
+        // import com.itextpdf.text.Document;
+        // import com.itextpdf.text.Paragraph;
+        // import com.itextpdf.text.pdf.PdfPTable;
+        // import com.itextpdf.text.pdf.PdfWriter;
+
+        // try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        //     Document document = new Document();
+        //     PdfWriter.getInstance(document, baos);
+        //     document.open();
+        //     document.add(new Paragraph("Transaction Report from " + startDate + " to " + endDate));
+        //     document.add(new Paragraph("User ID: " + userId));
+        //     document.add(new Paragraph("\n"));
+
+        //     List<Transaction> transactions = transactionRepository.findByUserIdAndDateRange(userId, startDate, endDate);
+
+        //     PdfPTable table = new PdfPTable(5); // 5 columns: Date, Type, Category, Description, Amount
+        //     table.addCell("Date");
+        //     table.addCell("Type");
+        //     table.addCell("Category");
+        //     table.addCell("Description");
+        //     table.addCell("Amount");
+
+        //     for (Transaction tx : transactions) {
+        //         table.addCell(tx.getTransactionDate().toString());
+        //         table.addCell(tx.getTransactionType());
+        //         String categoryName = "N/A";
+        //         if (tx.getCategory() != null) {
+        //             categoryName = tx.getCategory().getCategoryName();
+        //         }
+        //         table.addCell(categoryName);
+        //         table.addCell(tx.getTransactionDescription() != null ? tx.getTransactionDescription() : "");
+        //         table.addCell(tx.getTransactionAmount().toPlainString());
+        //     }
+        //     document.add(table);
+        //     document.close();
+        //     return baos.toByteArray();
+        // } catch (Exception e) {
+        //     System.err.println("Error generating PDF report: " + e.getMessage());
+        //     e.printStackTrace();
+        //     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate PDF report: " + e.getMessage());
+        // }
+        */
+    }
 }

@@ -37,10 +37,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findByUserIdAndCategoryId(@Param("userId") Long userId, @Param("categoryId") Long categoryId);
 
     // Query untuk mendapatkan transaksi berdasarkan rentang tanggal dan user
+    // Ini adalah metode yang akan digunakan untuk laporan CSV/PDF
     @Query("SELECT t FROM Transaction t WHERE t.user.userId = :userId AND t.transactionDate BETWEEN :startDate AND :endDate AND t.isDeleted = false ORDER BY t.transactionDate DESC")
     List<Transaction> findByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     // Query untuk mendapatkan transaksi terbaru berdasarkan user (untuk dashboard)
     @Query("SELECT t FROM Transaction t WHERE t.user.userId = :userId AND t.isDeleted = false ORDER BY t.transactionDate DESC, t.transactionId DESC")
     List<Transaction> findRecentTransactionsByUserId(@Param("userId") Long userId);
+
+    
 }

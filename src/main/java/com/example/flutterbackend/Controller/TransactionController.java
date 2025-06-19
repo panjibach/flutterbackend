@@ -6,12 +6,15 @@ import com.example.flutterbackend.service.TransactionService;
 import com.example.flutterbackend.security.AuthenticationHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -224,6 +227,86 @@ public class TransactionController {
         } catch (Exception e) {
             System.err.println("Error getting yearly summary: " + e.getMessage());
             throw e;
+        }
+    }
+
+    // ========== EXPORT ENDPOINTS ==========
+
+    // Endpoint baru untuk ekspor CSV bulanan
+    @GetMapping(value = "/export/csv/monthly/user/{userId}", produces = "text/csv")
+    public ResponseEntity<byte[]> exportMonthlyCsv(
+            @PathVariable Long userId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            HttpServletRequest request) {
+        try {
+            System.out.println("=== GET /api/transactions/export/csv/monthly/user/" + userId + " called ===");
+            
+            // Validasi akses user
+            if (!authHelper.validateUserAccess(userId, request)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Anda tidak memiliki akses untuk mengekspor laporan ini".getBytes());
+            }
+
+            YearMonth targetMonth;
+            if (year != null && month != null) {
+                targetMonth = YearMonth.of(year, month);
+            } else {
+                targetMonth = YearMonth.now();
+            }
+
+            LocalDate startDate = targetMonth.atDay(1);
+            LocalDate endDate = targetMonth.atEndOfMonth();
+
+            byte[] csvBytes = transactionService.generateCsvReport(userId, startDate, endDate);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("text/csv"));
+            headers.setContentDispositionFormData("attachment", "monthly_transactions_" + targetMonth.toString() + ".csv");
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            return new ResponseEntity<>(csvBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            System.err.println("Error exporting monthly CSV: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(("Failed to export monthly CSV: " + e.getMessage()).getBytes());
+        }
+    }
+
+    // Endpoint baru untuk ekspor PDF bulanan (konseptual)
+    @GetMapping(value = "/export/pdf/monthly/user/{userId}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> exportMonthlyPdf(
+            @PathVariable Long userId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            HttpServletRequest request) {
+        try {
+            System.out.println("=== GET /api/transactions/export/pdf/monthly/user/" + userId + " called ===");
+            
+            // Validasi akses user
+            if (!authHelper.validateUserAccess(userId, request)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Anda tidak memiliki akses untuk mengekspor laporan ini".getBytes());
+            }
+
+            YearMonth targetMonth;
+            if (year != null && month != null) {
+                targetMonth = YearMonth.of(year, month);
+            } else {
+                targetMonth = YearMonth.now();
+            }
+
+            LocalDate startDate = targetMonth.atDay(1);
+            LocalDate endDate = targetMonth.atEndOfMonth();
+
+            // Ini akan melempar NOT_IMPLEMENTED jika metode service adalah placeholder
+            byte[] pdfBytes = transactionService.generatePdfReport(userId, startDate, endDate);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/pdf"));
+            headers.setContentDispositionFormData("attachment", "monthly_transactions_" + targetMonth.toString() + ".pdf");
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            System.err.println("Error exporting monthly PDF: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(("Failed to export monthly PDF: " + e.getMessage()).getBytes());
         }
     }
 
