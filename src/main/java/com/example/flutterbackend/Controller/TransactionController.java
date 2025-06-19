@@ -231,84 +231,83 @@ public class TransactionController {
     }
 
     // ========== EXPORT ENDPOINTS ==========
-
     // Endpoint baru untuk ekspor CSV bulanan
-    @GetMapping(value = "/export/csv/monthly/user/{userId}", produces = "text/csv")
-    public ResponseEntity<byte[]> exportMonthlyCsv(
-            @PathVariable Long userId,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer month,
-            HttpServletRequest request) {
-        try {
-            System.out.println("=== GET /api/transactions/export/csv/monthly/user/" + userId + " called ===");
-            
-            // Validasi akses user
-            if (!authHelper.validateUserAccess(userId, request)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Anda tidak memiliki akses untuk mengekspor laporan ini".getBytes());
-            }
+  @GetMapping(value = "/export/csv/monthly/user/{userId}", produces = "text/csv")
+  public ResponseEntity<byte[]> exportMonthlyCsv(
+          @PathVariable Long userId,
+          @RequestParam(required = false) Integer year,
+          @RequestParam(required = false) Integer month,
+          HttpServletRequest request) {
+      try {
+          System.out.println("=== GET /api/transactions/export/csv/monthly/user/" + userId + " called ===");
+          
+          // Validasi akses user
+          if (!authHelper.validateUserAccess(userId, request)) {
+              return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Anda tidak memiliki akses untuk mengekspor laporan ini".getBytes());
+          }
 
-            YearMonth targetMonth;
-            if (year != null && month != null) {
-                targetMonth = YearMonth.of(year, month);
-            } else {
-                targetMonth = YearMonth.now();
-            }
+          YearMonth targetMonth;
+          if (year != null && month != null) {
+              targetMonth = YearMonth.of(year, month);
+          } else {
+              targetMonth = YearMonth.now();
+          }
 
-            LocalDate startDate = targetMonth.atDay(1);
-            LocalDate endDate = targetMonth.atEndOfMonth();
+          LocalDate startDate = targetMonth.atDay(1);
+          LocalDate endDate = targetMonth.atEndOfMonth();
 
-            byte[] csvBytes = transactionService.generateCsvReport(userId, startDate, endDate);
+          byte[] csvBytes = transactionService.generateCsvReport(userId, startDate, endDate);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType("text/csv"));
-            headers.setContentDispositionFormData("attachment", "monthly_transactions_" + targetMonth.toString() + ".csv");
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-            return new ResponseEntity<>(csvBytes, headers, HttpStatus.OK);
-        } catch (Exception e) {
-            System.err.println("Error exporting monthly CSV: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(("Failed to export monthly CSV: " + e.getMessage()).getBytes());
-        }
-    }
+          HttpHeaders headers = new HttpHeaders();
+          headers.setContentType(MediaType.parseMediaType("text/csv"));
+          headers.setContentDispositionFormData("attachment", "monthly_transactions_" + targetMonth.toString() + ".csv");
+          headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+          return new ResponseEntity<>(csvBytes, headers, HttpStatus.OK);
+      } catch (Exception e) {
+          System.err.println("Error exporting monthly CSV: " + e.getMessage());
+          e.printStackTrace();
+          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(("Failed to export monthly CSV: " + e.getMessage()).getBytes());
+      }
+  }
 
-    // Endpoint baru untuk ekspor PDF bulanan (konseptual)
-    @GetMapping(value = "/export/pdf/monthly/user/{userId}", produces = MediaType.APPLICATION_PDF_VALUE)
-    public ResponseEntity<byte[]> exportMonthlyPdf(
-            @PathVariable Long userId,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer month,
-            HttpServletRequest request) {
-        try {
-            System.out.println("=== GET /api/transactions/export/pdf/monthly/user/" + userId + " called ===");
-            
-            // Validasi akses user
-            if (!authHelper.validateUserAccess(userId, request)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Anda tidak memiliki akses untuk mengekspor laporan ini".getBytes());
-            }
+  // Endpoint baru untuk ekspor PDF bulanan (konseptual)
+  @GetMapping(value = "/export/pdf/monthly/user/{userId}", produces = MediaType.APPLICATION_PDF_VALUE)
+  public ResponseEntity<byte[]> exportMonthlyPdf(
+          @PathVariable Long userId,
+          @RequestParam(required = false) Integer year,
+          @RequestParam(required = false) Integer month,
+          HttpServletRequest request) {
+      try {
+          System.out.println("=== GET /api/transactions/export/pdf/monthly/user/" + userId + " called ===");
+          
+          // Validasi akses user
+          if (!authHelper.validateUserAccess(userId, request)) {
+              return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Anda tidak memiliki akses untuk mengekspor laporan ini".getBytes());
+          }
 
-            YearMonth targetMonth;
-            if (year != null && month != null) {
-                targetMonth = YearMonth.of(year, month);
-            } else {
-                targetMonth = YearMonth.now();
-            }
+          YearMonth targetMonth;
+          if (year != null && month != null) {
+              targetMonth = YearMonth.of(year, month);
+          } else {
+              targetMonth = YearMonth.now();
+          }
 
-            LocalDate startDate = targetMonth.atDay(1);
-            LocalDate endDate = targetMonth.atEndOfMonth();
+          LocalDate startDate = targetMonth.atDay(1);
+          LocalDate endDate = targetMonth.atEndOfMonth();
 
-            // Ini akan melempar NOT_IMPLEMENTED jika metode service adalah placeholder
-            byte[] pdfBytes = transactionService.generatePdfReport(userId, startDate, endDate);
+          // Ini akan melempar NOT_IMPLEMENTED jika metode service adalah placeholder
+          byte[] pdfBytes = transactionService.generatePdfReport(userId, startDate, endDate);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType("application/pdf"));
-            headers.setContentDispositionFormData("attachment", "monthly_transactions_" + targetMonth.toString() + ".pdf");
-            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-        } catch (Exception e) {
-            System.err.println("Error exporting monthly PDF: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(("Failed to export monthly PDF: " + e.getMessage()).getBytes());
-        }
-    }
+          HttpHeaders headers = new HttpHeaders();
+          headers.setContentType(MediaType.parseMediaType("application/pdf"));
+          headers.setContentDispositionFormData("attachment", "monthly_transactions_" + targetMonth.toString() + ".pdf");
+          return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+      } catch (Exception e) {
+          System.err.println("Error exporting monthly PDF: " + e.getMessage());
+          e.printStackTrace();
+          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(("Failed to export monthly PDF: " + e.getMessage()).getBytes());
+      }
+  }
 
     // ========== ERROR HANDLING ==========
     

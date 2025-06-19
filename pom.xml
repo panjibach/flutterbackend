@@ -142,6 +142,23 @@
 			<artifactId>spring-session-jdbc</artifactId>
 		</dependency>
 
+		<!-- export -->
+		<dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itextpdf</artifactId>
+            <version>5.5.13.3</version> <!-- Gunakan versi stabil terbaru -->
+        </dependency>
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itext-pdfa</artifactId>
+            <version>5.5.13.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itext-xtra</artifactId>
+            <version>5.5.13.3</version>
+        </dependency>
+
 
 	</dependencies>
 
