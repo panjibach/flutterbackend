@@ -8,6 +8,8 @@ import com.example.flutterbackend.model.User;
 import com.example.flutterbackend.repository.CategoryRepository;
 import com.example.flutterbackend.repository.TransactionRepository;
 import com.example.flutterbackend.repository.UserRepository;
+import com.example.flutterbackend.util.HeaderFooterPageEvent;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
@@ -17,7 +19,23 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
+import java.io.ByteArrayOutputStream;
+
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 @Service
 public class TransactionService {
@@ -329,65 +347,114 @@ public class TransactionService {
         }
     }
 
-    // Conceptual PDF generation (requires a library like iText or Apache PDFBox)
-    // Untuk PDF, Anda memerlukan library seperti iText (com.itextpdf:itextpdf) atau Apache PDFBox (org.apache.pdfbox:pdfbox)
-    // yang harus ditambahkan ke pom.xml atau build.gradle Anda.
-    // Implementasi di bawah ini adalah placeholder.
     public byte[] generatePdfReport(Long userId, LocalDate startDate, LocalDate endDate) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "PDF generation is not implemented. Requires a PDF library (e.g., iText, Apache PDFBox).");
-        /*
-        // Contoh konseptual menggunakan iText:
-        // Pastikan Anda telah menambahkan dependensi iText ke pom.xml atau build.gradle Anda:
-        // Maven:
-        // <dependency>
-        //     <groupId>com.itextpdf</groupId>
-        //     <artifactId>itextpdf</artifactId>
-        //     <version>5.5.13.3</version>
-        // </dependency>
-        // Gradle:
-        // implementation 'com.itextpdf:itextpdf:5.5.13.3'
+    // Gunakan try-with-resources
+    try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream()) {
+        // --- 0. Pengaturan Dokumen ---
+        Document document = new Document(PageSize.A4, 36, 36, 90, 36); // Margin: Kiri, Kanan, Atas, Bawah
+        PdfWriter writer = PdfWriter.getInstance(document, baos);
+        
+        // Menambahkan event handler untuk Header/Footer
+        HeaderFooterPageEvent event = new HeaderFooterPageEvent();
+        writer.setPageEvent(event);
+        
+        document.open();
 
-        // import com.itextpdf.text.Document;
-        // import com.itextpdf.text.Paragraph;
-        // import com.itextpdf.text.pdf.PdfPTable;
-        // import com.itextpdf.text.pdf.PdfWriter;
+        // --- 1. Pengaturan Font ---
+        Font fontJudul = new Font(Font.FontFamily.TIMES_ROMAN, 18, Font.BOLD);
+        Font fontSubJudul = new Font(Font.FontFamily.HELVETICA, 12, Font.NORMAL);
+        Font fontHeaderTabel = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD, BaseColor.WHITE);
+        Font fontIsiTabel = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
+        Font fontRingkasanLabel = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD);
+        Font fontRingkasanJumlah = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
+        
+        // --- 2. Judul Laporan ---
+        Paragraph judul = new Paragraph("Spendly Report", fontJudul);
+        judul.setAlignment(Element.ALIGN_CENTER);
+        document.add(judul);
 
-        // try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-        //     Document document = new Document();
-        //     PdfWriter.getInstance(document, baos);
-        //     document.open();
-        //     document.add(new Paragraph("Transaction Report from " + startDate + " to " + endDate));
-        //     document.add(new Paragraph("User ID: " + userId));
-        //     document.add(new Paragraph("\n"));
+        Paragraph subJudul = new Paragraph("Period: " + startDate + " to " + endDate, fontSubJudul);
+        subJudul.setAlignment(Element.ALIGN_CENTER);
+        subJudul.setSpacingAfter(20); // Beri jarak setelah sub-judul
+        document.add(subJudul);
 
-        //     List<Transaction> transactions = transactionRepository.findByUserIdAndDateRange(userId, startDate, endDate);
+        // --- 3. Mengambil dan Menghitung Data Ringkasan ---
+        BigDecimal totalIncome = transactionRepository.sumIncomeByUserIdAndDateRange(userId, startDate, endDate);
+        BigDecimal totalExpense = transactionRepository.sumExpenseByUserIdAndDateRange(userId, startDate, endDate);
+        BigDecimal netBalance = totalIncome.subtract(totalExpense);
+        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        
+        // --- 4. Menampilkan Ringkasan ---
+        PdfPTable summaryTable = new PdfPTable(2);
+        summaryTable.setWidthPercentage(50);
+        summaryTable.setHorizontalAlignment(Element.ALIGN_LEFT);
+        summaryTable.getDefaultCell().setBorder(PdfPCell.NO_BORDER); // Tanpa border
+        
+        summaryTable.addCell(new Phrase("Total Income:", fontRingkasanLabel));
+        summaryTable.addCell(new Phrase(currencyFormatter.format(totalIncome), fontRingkasanJumlah));
+        summaryTable.addCell(new Phrase("Total Expense:", fontRingkasanLabel));
+        summaryTable.addCell(new Phrase(currencyFormatter.format(totalExpense), fontRingkasanJumlah));
+        summaryTable.addCell(new Phrase("Net Balance:", fontRingkasanLabel));
+        summaryTable.addCell(new Phrase(currencyFormatter.format(netBalance), fontRingkasanJumlah));
+        
+        document.add(summaryTable);
+        document.add(Chunk.NEWLINE); // Spasi
 
-        //     PdfPTable table = new PdfPTable(5); // 5 columns: Date, Type, Category, Description, Amount
-        //     table.addCell("Date");
-        //     table.addCell("Type");
-        //     table.addCell("Category");
-        //     table.addCell("Description");
-        //     table.addCell("Amount");
+        // --- 5. Membuat Tabel Detail Transaksi ---
+        List<Transaction> transactions = transactionRepository.findByUserIdAndDateRange(userId, startDate, endDate);
 
-        //     for (Transaction tx : transactions) {
-        //         table.addCell(tx.getTransactionDate().toString());
-        //         table.addCell(tx.getTransactionType());
-        //         String categoryName = "N/A";
-        //         if (tx.getCategory() != null) {
-        //             categoryName = tx.getCategory().getCategoryName();
-        //         }
-        //         table.addCell(categoryName);
-        //         table.addCell(tx.getTransactionDescription() != null ? tx.getTransactionDescription() : "");
-        //         table.addCell(tx.getTransactionAmount().toPlainString());
-        //     }
-        //     document.add(table);
-        //     document.close();
-        //     return baos.toByteArray();
-        // } catch (Exception e) {
-        //     System.err.println("Error generating PDF report: " + e.getMessage());
-        //     e.printStackTrace();
-        //     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate PDF report: " + e.getMessage());
-        // }
-        */
+        if (transactions.isEmpty()) {
+            document.add(new Paragraph("No transactions found for this period."));
+        } else {
+            PdfPTable table = new PdfPTable(4); // Kolom: Tanggal, Kategori, Deskripsi, Jumlah
+            table.setWidthPercentage(100);
+            table.setSpacingBefore(10);
+            
+            // --- Header Tabel ---
+            String[] headers = {"Date", "Category", "Description", "Amount"};
+            for (String headerTitle : headers) {
+                PdfPCell headerCell = new PdfPCell();
+                headerCell.setBackgroundColor(new BaseColor(63, 81, 181)); // Warna ungu tua
+                headerCell.setPhrase(new Phrase(headerTitle, fontHeaderTabel));
+                headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                headerCell.setPadding(5);
+                table.addCell(headerCell);
+            }
+
+            // --- Isi Tabel ---
+            boolean alternate = false;
+            BaseColor colorZebra = new BaseColor(240, 240, 240); // Abu-abu muda
+
+            for (Transaction tx : transactions) {
+                // Kolom Tanggal
+                PdfPCell dateCell = new PdfPCell(new Phrase(tx.getTransactionDate().toString(), fontIsiTabel));
+                // Kolom Kategori
+                PdfPCell categoryCell = new PdfPCell(new Phrase(tx.getCategory() != null ? tx.getCategory().getCategoryName() : "N/A", fontIsiTabel));
+                // Kolom Deskripsi
+                PdfPCell descCell = new PdfPCell(new Phrase(tx.getTransactionDescription() != null ? tx.getTransactionDescription() : "", fontIsiTabel));
+                // Kolom Jumlah (Rata Kanan)
+                PdfPCell amountCell = new PdfPCell(new Phrase(currencyFormatter.format(tx.getTransactionAmount()), fontIsiTabel));
+                amountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+                PdfPCell[] cells = {dateCell, categoryCell, descCell, amountCell};
+                for (PdfPCell cell : cells) {
+                    if (alternate) {
+                        cell.setBackgroundColor(colorZebra);
+                    }
+                    cell.setPadding(5);
+                    table.addCell(cell);
+                }
+                alternate = !alternate;
+            }
+            document.add(table);
+        }
+
+        document.close();
+        return baos.toByteArray();
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error while generating PDF report", e);
     }
+}
 }
